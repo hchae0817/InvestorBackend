@@ -1,5 +1,7 @@
 ﻿using Backend.Data;
+using Backend.DataTransferObject;
 using Backend.Models;
+using Backend.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -9,18 +11,33 @@ namespace Backend.Controllers
     [ApiController]
     public class InvestorsController : ControllerBase
     {
-        private readonly DatabaseContext _context;
+        private readonly InvestorService _investorService;
 
-        public InvestorsController(DatabaseContext context)
+        public InvestorsController(InvestorService investorService)
         {
-            _context = context;
+            _investorService = investorService;
         }
 
         // GET: api/investors
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<Investor>>> GetInvestors()
+        public ActionResult<List<InvestorDto>> GetInvestorsGroupedByName()
         {
-            return await _context.Investors.ToListAsync();
+            try
+            {
+                var result = _investorService.GetInvestorsGroupedByName();
+
+                if (result == null || !result.Any())
+                {
+                    return NotFound("No investors found.");
+                }
+
+                return Ok(result); // Returns 200 OK with the result as JSON
+            }
+            catch (Exception ex)
+            {
+                // Optionally, log the exception or return a 500 error
+                return StatusCode(500, $"Internal server error: {ex.Message}");
+            }
         }
     }
 }
