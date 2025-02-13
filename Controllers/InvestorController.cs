@@ -1,46 +1,26 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Backend.Data;
 using Backend.Models;
-using System.Collections.Generic;
-using Microsoft.Data.Sqlite;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 
-namespace YourProjectName.Controllers
+namespace Backend.Controllers
 {
-    [ApiController]
     [Route("api/[controller]")]
-    public class DatabaseContext : ControllerBase
+    [ApiController]
+    public class InvestorsController : ControllerBase
     {
-        // Get all investors
-        [HttpGet]
-        public IActionResult GetAllInvestors()
+        private readonly DatabaseContext _context;
+
+        public InvestorsController(DatabaseContext context)
         {
-            var investors = new List<Investor>();
+            _context = context;
+        }
 
-            using (var connection = new SqliteConnection("Data Source=investors.db"))
-            {
-                connection.Open();
-                var command = connection.CreateCommand();
-                command.CommandText = "SELECT * FROM Investors";
-
-                using (var reader = command.ExecuteReader())
-                {
-                    while (reader.Read())
-                    {
-                        investors.Add(new Investor
-                        {
-                            InvestorName = reader.GetString(0),
-                            InvestorType = reader.GetString(1),
-                            InvestorCountry = reader.GetString(2),
-                            InvestorDateAdded = reader.GetDateTime(3),
-                            InvestorLastUpdated = reader.GetDateTime(4),
-                            CommitmentAssetClass = reader.GetString(5),
-                            CommitmentAmount = reader.GetDecimal(6),
-                            CommitmentCurrency = reader.GetString(7)
-                        });
-                    }
-                }
-            }
-
-            return Ok(investors);
+        // GET: api/investors
+        [HttpGet]
+        public async Task<ActionResult<IEnumerable<Investor>>> GetInvestors()
+        {
+            return await _context.Investors.ToListAsync();
         }
     }
 }

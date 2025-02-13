@@ -1,8 +1,7 @@
-﻿using Microsoft.Data.Sqlite;
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 using Backend.Models;
 
-namespace InvestorApi.Data
+namespace Backend.Data
 {
     public class DatabaseContext : DbContext
     {
