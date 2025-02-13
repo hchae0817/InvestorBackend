@@ -1,41 +1,79 @@
+using Backend.Models;
+using Microsoft.EntityFrameworkCore;
+using Backend.Data;
+
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
-// Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
-builder.Services.AddOpenApi();
+builder.Services.AddDbContext<DatabaseContext>(options =>
+    options.UseSqlite("Data Source=investors.db"));  // SQLite connection string
+
+builder.Services.AddControllers();
 
 var app = builder.Build();
+
+// Initialize the database and import CSV data
+await InitializeDatabase(app.Services);
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
-    app.MapOpenApi();
+    app.UseDeveloperExceptionPage();
 }
 
 app.UseHttpsRedirection();
 
-var summaries = new[]
-{
-    "Freezing", "Bracing", "Chilly", "Cool", "Mild", "Warm", "Balmy", "Hot", "Sweltering", "Scorching"
-};
-
-app.MapGet("/weatherforecast", () =>
-{
-    var forecast =  Enumerable.Range(1, 5).Select(index =>
-        new WeatherForecast
-        (
-            DateOnly.FromDateTime(DateTime.Now.AddDays(index)),
-            Random.Shared.Next(-20, 55),
-            summaries[Random.Shared.Next(summaries.Length)]
-        ))
-        .ToArray();
-    return forecast;
-})
-.WithName("GetWeatherForecast");
+app.MapControllers();
 
 app.Run();
 
-record WeatherForecast(DateOnly Date, int TemperatureC, string? Summary)
+// Initialize the database and import CSV data
+async Task InitializeDatabase(IServiceProvider services)
 {
-    public int TemperatureF => 32 + (int)(TemperatureC / 0.5556);
+    var dbContext = services.GetRequiredService<DatabaseContext>();
+    dbContext.Database.EnsureCreated(); // Ensure the database is created
+
+    // Check if the database already has data
+    if (!dbContext.Investors.Any())
+    {
+        // Path to your CSV file
+        var csvFilePath = "data.csv";  // Make sure this file is in the correct directory
+
+        // Check if the CSV file exists
+        if (File.Exists(csvFilePath))
+        {
+            var lines = File.ReadAllLines(csvFilePath).Skip(1); // Skip the header row
+
+            // Loop through each line in the CSV file and insert it into the database
+            foreach (var line in lines)
+            {
+                var columns = line.Split(',');
+
+                if (columns.Length == 8) // Ensure that the line has the expected number of columns
+                {
+                    var investor = new Investor
+                    {
+                        InvestorName = columns[0],
+                        InvestorType = columns[1],
+                        InvestorCountry = columns[2],
+                        InvestorDateAdded = DateTime.Parse(columns[3]),
+                        InvestorLastUpdated = DateTime.Parse(columns[4]),
+                        CommitmentAssetClass = columns[5],
+                        CommitmentAmount = decimal.Parse(columns[6]),
+                        CommitmentCurrency = columns[7]
+                    };
+
+                    // Add the investor to the context
+                    dbContext.Investors.Add(investor);
+                }
+            }
+
+            // Save all changes to the database
+            await dbContext.SaveChangesAsync();
+        }
+        else
+        {
+            Console.WriteLine($"CSV file '{csvFilePath}' not found.");
+        }
+    }
 }
