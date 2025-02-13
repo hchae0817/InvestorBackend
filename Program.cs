@@ -9,10 +9,22 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddDbContext<DatabaseContext>(options =>
     options.UseSqlite("Data Source=investors.db"));  // SQLite connection string
 
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowAll", policy =>
+    {
+        policy.AllowAnyOrigin()  
+              .AllowAnyMethod() 
+              .AllowAnyHeader();
+    });
+});
+
 builder.Services.AddControllers();
 builder.Services.AddScoped<InvestorService>();
+
 var app = builder.Build();
 
+app.UseCors("AllowAll");
 // Initialize the database and import CSV data within a scope
 using (var scope = app.Services.CreateScope())  // Creates a scope to resolve scoped services
 {
