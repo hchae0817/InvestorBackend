@@ -35,7 +35,6 @@ namespace Backend.Controllers
             }
             catch (Exception ex)
             {
-                // Optionally, log the exception or return a 500 error
                 return StatusCode(500, $"Internal server error: {ex.Message}");
             }
         }
